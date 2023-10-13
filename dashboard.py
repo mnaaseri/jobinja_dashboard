@@ -82,7 +82,7 @@ else:
     filtered_df = df3[df3["Job Location"].isin(region) & df3["Employment Type"].isin(type) & df3["Job Category"].isin(category)]
 
 # category_df = filtered_df.groupby(by=["Category"], as_index=False)["Sales"].sum()
-category_df = df.groupby('Job Category').size().reset_index()
+category_df = filtered_df.groupby('Job Category').size().reset_index()
 category_df.columns = ['Job Category', 'UniqueRecordCount']
 
 
@@ -91,16 +91,16 @@ with col1:
     fig = px.bar(category_df, x = "Job Category", y = "UniqueRecordCount",
                  template = "seaborn")
 
-    st.plotly_chart(fig,use_container_width=True, height = 200)
+    st.plotly_chart(fig,use_container_width=True, height = 1500)
 
 
 with col2:
     st.subheader("Region wise Sales")
     fig = px.pie(filtered_df, names = "Job Location", hole = 0.5)
 
-    fig.update_traces(text = filtered_df["Job Location"], textposition = "outside")
+    # fig.update_traces(text = filtered_df["Job Location"], textposition = "outside")
     fig.update_xaxes(ticks="outside",tickfont=dict(family='Arial', size=20, color='black'))
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True,height = 1500)
 
 
 
