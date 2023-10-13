@@ -9,9 +9,10 @@ warnings.filterwarnings('ignore')
 
 st.set_page_config(page_title="jobinja Dashboard", page_icon=":bar_chart", layout="wide")
 # Set the font to "Noto Sans" or the system font you prefer
-st.write('<style>body {font-family: "Noto Sans Persian, sans-serif";}</style>', unsafe_allow_html=True)
+
+st.write(unsafe_allow_html=True)
 # Specify the text direction as RTL
-# st.write('<style>body {direction: rtl;}</style>', unsafe_allow_html=True)
+st.write('<style>body {direction: rtl;}</style>', unsafe_allow_html=True)
 st.title("عنوان")
 # st.title(" :bar_chart: JoBInja EDA")
 st.markdown('<style>div.block-container{padding-top:1rem;}</style>',unsafe_allow_html=True)
@@ -20,10 +21,10 @@ fl = st.file_uploader(":file_folder: Upload a file",type=(["csv","txt","xlsx","x
 if fl is not None:
     filename = fl.name
     st.write(filename)
-    df = pd.read_csv(filename, encoding = "ISO-8859-1")
+    df = pd.read_csv(filename)
 else:
-    os.chdir(r"/home/maryam/Desktop/Personal_projects/jobinja_dashboard/")
-    df = pd.read_csv("Jobinja - Processed.csv", encoding = "ISO-8859-1")
+    # os.chdir(r"/home/maryam/Desktop/Personal_projects/jobinja_dashboard/")
+    df = pd.read_csv("Jobinja - Processed.csv")
 
 col1, col2 = st.columns((2))
 # df["Date Posted"] = pd.to_datetime(df["Date Posted"])
@@ -89,13 +90,16 @@ with col1:
     st.subheader("Category wise Jon Positions")
     fig = px.bar(category_df, x = "Job Category", y = "UniqueRecordCount",
                  template = "seaborn")
+
     st.plotly_chart(fig,use_container_width=True, height = 200)
 
 
 with col2:
     st.subheader("Region wise Sales")
     fig = px.pie(filtered_df, names = "Job Location", hole = 0.5)
+
     fig.update_traces(text = filtered_df["Job Location"], textposition = "outside")
+    fig.update_xaxes(ticks="outside",tickfont=dict(family='Arial', size=20, color='black'))
     st.plotly_chart(fig, use_container_width=True)
 
 
@@ -107,6 +111,7 @@ with cl1:
         csv = category_df.to_csv(index = False).encode('utf-8')
         st.download_button("Download Data", data = csv, file_name = "Category.csv", mime = "text/csv",
                             help = 'Click here to download the data as a CSV file')
+        
 
 with cl2:
     with st.expander("Region_ViewData"):
