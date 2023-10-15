@@ -1,4 +1,4 @@
 streamlit
 plotly
-arabic_reshaper
-python-bidi
+torch
+sentence_transformers

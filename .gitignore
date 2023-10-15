@@ -1,1 +1,6 @@
 Jobinja - Processed.csv
+jobinja_with_date.csv
+jobinja_with_date_embeddings.csv
+test_notebook.ipynb
+ipynb_checkpoints
+__pycache__

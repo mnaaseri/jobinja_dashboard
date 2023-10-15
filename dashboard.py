@@ -3,17 +3,21 @@ import plotly.express as px
 import pandas as pd 
 import os 
 import warnings
-import arabic_reshaper
-from bidi.algorithm import get_display
+from search import VectorSearch
 warnings.filterwarnings('ignore')
+import SentenceTransformer
+import torch
+
+MODEL_PATH = 'intfloat/multilingual-e5-large'
+embedder =  SentenceTransformer(MODEL_PATH)
 
 st.set_page_config(page_title="jobinja Dashboard", page_icon=":bar_chart", layout="wide")
-# Set the font to "Noto Sans" or the system font you prefer
+
+    
 
 st.write(unsafe_allow_html=True)
 # Specify the text direction as RTL
-st.write('<style>body {direction: rtl;}</style>', unsafe_allow_html=True)
-st.title("عنوان")
+st.write('<style>body {direction: ltr;}</style>', unsafe_allow_html=True)
 # st.title(" :bar_chart: JoBInja EDA")
 st.markdown('<style>div.block-container{padding-top:1rem;}</style>',unsafe_allow_html=True)
 
@@ -23,23 +27,23 @@ if fl is not None:
     st.write(filename)
     df = pd.read_csv(filename)
 else:
-    # os.chdir(r"/home/maryam/Desktop/Personal_projects/jobinja_dashboard/")
-    df = pd.read_csv("Jobinja - Processed.csv")
+    os.chdir(r"/home/maryam/Desktop/Personal_projects/jobinja_dashboard/")
+    df = pd.read_csv("jobinja_with_date_embeddings.csv")
 
 col1, col2 = st.columns((2))
-# df["Date Posted"] = pd.to_datetime(df["Date Posted"])
+df["Date Posted"] = pd.to_datetime(df["Date Posted"])
 
-# # Getting the min and max date 
-# startDate = pd.to_datetime(df["Date Posted"]).min()
-# endDate = pd.to_datetime(df["Date Posted"]).max()
+# Getting the min and max date 
+startDate = pd.to_datetime(df["Date Posted"]).min()
+endDate = pd.to_datetime(df["Date Posted"]).max()
 
-# with col1:
-#     date1 = pd.to_datetime(st.date_input("Start Date", startDate))
+with col1:
+    date1 = pd.to_datetime(st.date_input("Start Date", startDate))
 
-# with col2:
-#     date2 = pd.to_datetime(st.date_input("End Date", endDate))
+with col2:
+    date2 = pd.to_datetime(st.date_input("End Date", endDate))
 
-# df = df[(df["Order Date"] >= date1) & (df["Order Date"] <= date2)].copy()
+df = df[(df["Date Posted"] >= date1) & (df["Date Posted"] <= date2)].copy()
 
 st.sidebar.header("Choose your Job Category: ")
 # Create for Region
@@ -86,21 +90,39 @@ category_df = filtered_df.groupby('Job Category').size().reset_index()
 category_df.columns = ['Job Category', 'UniqueRecordCount']
 
 
-with col1:
-    st.subheader("Category wise Jon Positions")
-    fig = px.bar(category_df, x = "Job Category", y = "UniqueRecordCount",
-                 template = "seaborn")
+# st.subheader("Category wise Jon Positions")
+# fig = px.bar(category_df, x = "Job Category", y = "UniqueRecordCount",
+#                 template = "seaborn")
 
-    st.plotly_chart(fig,use_container_width=True, height = 1500)
+# st.plotly_chart(fig,use_container_width=True, height = 1500)
 
+st.subheader("Category-wise Job Positions")
 
-with col2:
-    st.subheader("Region wise Sales")
-    fig = px.pie(filtered_df, names = "Job Location", hole = 0.5)
+# Count the occurrences of each category
+category_counts = df['Job Category'].value_counts().reset_index()
+category_counts.columns = ['Job Category', 'Count']
 
-    # fig.update_traces(text = filtered_df["Job Location"], textposition = "outside")
-    fig.update_xaxes(ticks="outside",tickfont=dict(family='Arial', size=20, color='black'))
-    st.plotly_chart(fig, use_container_width=True,height = 1500)
+# Create the bar chart without specifying x
+fig = px.bar(category_counts, x='Count', y='Job Category', orientation='h', template='seaborn')
+
+fig.update_layout(
+    width=800,
+    height=400,  # Adjust the height as needed
+    margin=dict(l=300, r=50, t=50, b=50),
+    xaxis_tickangle=0,  # Rotate x-axis labels if needed
+)
+
+st.plotly_chart(fig, use_container_width=True)
+st.subheader("Region wise Sales")
+fig = px.pie(filtered_df, names="Job Location", hole=0.2)  # Adjust the hole size
+fig.update_traces(text=filtered_df["Job Location"], textposition="inside")  # Change textposition
+fig.update_xaxes(ticks="outside", tickfont=dict(size=8, color='black'))  # Adjust font size
+fig.update_layout(
+    width=700,
+    height=600,  # Adjust the height to fit the page
+)
+
+st.plotly_chart(fig, use_container_width=True)
 
 
 
@@ -120,4 +142,76 @@ with cl2:
         csv = region.to_csv(index = False).encode('utf-8')
         st.download_button("Download Data", data = csv, file_name = "Region.csv", mime = "text/csv",
                         help = 'Click here to download the data as a CSV file')
+
+filtered_df["month_year"] = filtered_df["Date Posted"].dt.to_period("M")
+st.subheader('Time Series Analysis')
+
+linechart = pd.DataFrame(filtered_df.groupby(filtered_df["month_year"].dt.strftime("%Y : %b"))["Job Category"].size()).reset_index()
+fig2 = px.line(linechart, x = "month_year", y="Job Category", labels = {"Job Category": "Amount"},height=500, width = 1000,template="gridon")
+st.plotly_chart(fig2,use_container_width=True)
+
+with st.expander("View Data of TimeSeries:"):
+    st.write(linechart.T.style.background_gradient(cmap="Blues"))
+    csv = linechart.to_csv(index=False).encode("utf-8")
+    st.download_button('Download Data', data = csv, file_name = "TimeSeries.csv", mime ='text/csv')
+
+# Filter the DataFrame to include only job locations in Tehran
+tehran_filtered_df = filtered_df[filtered_df["Job Location"] == "تهران"]
+
+# Group and count the records based on Job Location and Job Category
+records_count = tehran_filtered_df.groupby(["Job Location", "Job Category"]).size().reset_index(name="RecordCount")
+
+# Create a treemap based on Job Location, Job Category, and the count of records
+st.subheader("Hierarchical view of Records using TreeMap (Tehran)")
+fig3 = px.treemap(records_count, path=["Job Location", "Job Category"], values="RecordCount", hover_data=["RecordCount"],
+                color="Job Category")
+fig3.update_layout(width=800, height=650)
+fig3.update_traces(textposition="middle center")
+st.plotly_chart(fig3, use_container_width=True)
+
+chart1, chart2= st.columns((2))
+with chart1:
+    st.subheader('Gender')
+    fig = px.pie(filtered_df, names = "Gender", template = "plotly_dark")
+    fig.update_traces(text = filtered_df["Gender"], textposition = "inside")
+    st.plotly_chart(fig, use_container_width=True)
+
+with chart2:
+    st.subheader('Salary')
+    fig = px.pie(filtered_df, names = "Salary", template = "gridon")
+    fig.update_traces(text = filtered_df["Salary"], textposition = "inside")
+    st.plotly_chart(fig, use_container_width=True)
+
+
+st.subheader('Company Category')
+fig = px.pie(filtered_df, names="Company Category", template="gridon")
+fig.update_traces(text=filtered_df["Company Category"], textposition="inside")
+fig.update_layout(width=800, height=650)
+st.plotly_chart(fig, use_container_width=True)
+
+
+import streamlit as st
+
+# Title
+st.title("What You are Searching For?")
+
+# Input box for user text input
+user_query = st.text_input("Enter your desired job position:")
+
+st.write("Your query:", user_query)
+
+# Create an instance of VectorSearch
+vector_search = VectorSearch(embedder, threshold_percentage=0.02)
+
+corpus = df['Job Position']
+embeddings = df['embeddings']
+
+# Call the search method with your data and queries
+results = vector_search.search(corpus, embeddings, user_query)
+
+# Print or process the results as needed
+for query_results in results:
+    for result in query_results:
+        st.write(f"Query: {result['Query']}")
+        st.write(f"Job Position: {result['Job Position']}\n(Score: {result['Score']:.4f})\n")
 
