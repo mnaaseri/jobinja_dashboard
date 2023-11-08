@@ -5,11 +5,15 @@ import os
 import warnings
 from search import VectorSearch
 warnings.filterwarnings('ignore')
-import SentenceTransformer
+from sentence_transformers import SentenceTransformer
 import torch
+import onnxruntime
 
-MODEL_PATH = 'intfloat/multilingual-e5-large'
-embedder =  SentenceTransformer(MODEL_PATH)
+# ONNX_MODEL_PATH = "./model/onnx"
+# # MODEL_PATH = 'intfloat/multilingual-e5-base'
+# # MODEL_PATH = './model'
+# embedder =  SentenceTransformer(MODEL_PATH)
+# session = onnxruntime.InferenceSession(ONNX_MODEL_PATH)
 
 st.set_page_config(page_title="jobinja Dashboard", page_icon=":bar_chart", layout="wide")
 
@@ -27,7 +31,7 @@ if fl is not None:
     st.write(filename)
     df = pd.read_csv(filename)
 else:
-    os.chdir(r"/home/maryam/Desktop/Personal_projects/jobinja_dashboard/")
+    os.chdir(r"/home/maryam/Desktop/git-projects/jobinja_dashboard/")
     df = pd.read_csv("jobinja_with_date_embeddings.csv")
 
 col1, col2 = st.columns((2))
@@ -188,30 +192,3 @@ fig = px.pie(filtered_df, names="Company Category", template="gridon")
 fig.update_traces(text=filtered_df["Company Category"], textposition="inside")
 fig.update_layout(width=800, height=650)
 st.plotly_chart(fig, use_container_width=True)
-
-
-import streamlit as st
-
-# Title
-st.title("What You are Searching For?")
-
-# Input box for user text input
-user_query = st.text_input("Enter your desired job position:")
-
-st.write("Your query:", user_query)
-
-# Create an instance of VectorSearch
-vector_search = VectorSearch(embedder, threshold_percentage=0.02)
-
-corpus = df['Job Position']
-embeddings = df['embeddings']
-
-# Call the search method with your data and queries
-results = vector_search.search(corpus, embeddings, user_query)
-
-# Print or process the results as needed
-for query_results in results:
-    for result in query_results:
-        st.write(f"Query: {result['Query']}")
-        st.write(f"Job Position: {result['Job Position']}\n(Score: {result['Score']:.4f})\n")
-
