@@ -1,6 +1,6 @@
 # Jobinja Interactive Dashboard and Vector Search for User Search
 
-I used Jobinja dataset to build an interactive dashboard using Plotly and Streamlit. It's a simple dashboard to show how job postings have been in about 6 months in one of the biggest job posting websites in Iran. 
+I used [Jobinja dataset](https://github.com/Hexanol777/Jobinja-Crawler) to build an interactive dashboard using Plotly and Streamlit. It's a simple dashboard to show how job postings have been in about 6 months in one of the biggest job posting websites in Iran. 
 You can see some of the charts here:
 
 ![tree_chart](https://github.com/mnaaseri/jobinja_dashboard/assets/79506175/9cab55bd-441b-47a9-a3c7-2ee81c8cd5e5)
@@ -10,7 +10,7 @@ You can see some of the charts here:
 You can run the project locally using:
 
 
-streamlit run dashboard.py
+>> streamlit run dashboard.py
 
 
 ## vector Search
