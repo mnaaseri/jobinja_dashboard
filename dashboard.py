@@ -3,26 +3,12 @@ import plotly.express as px
 import pandas as pd 
 import os 
 import warnings
-from search import VectorSearch
 warnings.filterwarnings('ignore')
-from sentence_transformers import SentenceTransformer
-import torch
-import onnxruntime
-
-# ONNX_MODEL_PATH = "./model/onnx"
-# # MODEL_PATH = 'intfloat/multilingual-e5-base'
-# # MODEL_PATH = './model'
-# embedder =  SentenceTransformer(MODEL_PATH)
-# session = onnxruntime.InferenceSession(ONNX_MODEL_PATH)
 
 st.set_page_config(page_title="jobinja Dashboard", page_icon=":bar_chart", layout="wide")
 
-    
-
 st.write(unsafe_allow_html=True)
-# Specify the text direction as RTL
 st.write('<style>body {direction: ltr;}</style>', unsafe_allow_html=True)
-# st.title(" :bar_chart: JoBInja EDA")
 st.markdown('<style>div.block-container{padding-top:1rem;}</style>',unsafe_allow_html=True)
 
 fl = st.file_uploader(":file_folder: Upload a file",type=(["csv","txt","xlsx","xls"]))
@@ -37,7 +23,6 @@ else:
 col1, col2 = st.columns((2))
 df["Date Posted"] = pd.to_datetime(df["Date Posted"])
 
-# Getting the min and max date 
 startDate = pd.to_datetime(df["Date Posted"]).min()
 endDate = pd.to_datetime(df["Date Posted"]).max()
 
@@ -50,27 +35,19 @@ with col2:
 df = df[(df["Date Posted"] >= date1) & (df["Date Posted"] <= date2)].copy()
 
 st.sidebar.header("Choose your Job Category: ")
-# Create for Region
 region = st.sidebar.multiselect("Pick your Region", df["Job Location"].unique())
 if not region:
     df2 = df.copy()
 else:
     df2 = df[df["Job Location"].isin(region)]
 
-# Create for Employment Type
 type = st.sidebar.multiselect("Employment Type", df2["Employment Type"].unique())
 if not type:
     df3 = df2.copy()
 else:
     df3 = df2[df2["Employment Type"].isin(type)]
 
-
-# Create for Job Category
 category = st.sidebar.multiselect("Job Category",df3["Job Category"].unique())
-
-
-
-# Filter the data based on Region, State and City
 
 if not region and not type and not category:
     filtered_df = df
@@ -89,46 +66,34 @@ elif category:
 else:
     filtered_df = df3[df3["Job Location"].isin(region) & df3["Employment Type"].isin(type) & df3["Job Category"].isin(category)]
 
-# category_df = filtered_df.groupby(by=["Category"], as_index=False)["Sales"].sum()
 category_df = filtered_df.groupby('Job Category').size().reset_index()
 category_df.columns = ['Job Category', 'UniqueRecordCount']
 
-
-# st.subheader("Category wise Jon Positions")
-# fig = px.bar(category_df, x = "Job Category", y = "UniqueRecordCount",
-#                 template = "seaborn")
-
-# st.plotly_chart(fig,use_container_width=True, height = 1500)
-
 st.subheader("Category-wise Job Positions")
 
-# Count the occurrences of each category
 category_counts = df['Job Category'].value_counts().reset_index()
 category_counts.columns = ['Job Category', 'Count']
 
-# Create the bar chart without specifying x
 fig = px.bar(category_counts, x='Count', y='Job Category', orientation='h', template='seaborn')
 
 fig.update_layout(
     width=800,
-    height=400,  # Adjust the height as needed
+    height=400, 
     margin=dict(l=300, r=50, t=50, b=50),
-    xaxis_tickangle=0,  # Rotate x-axis labels if needed
+    xaxis_tickangle=0, 
 )
 
 st.plotly_chart(fig, use_container_width=True)
 st.subheader("Region wise Sales")
-fig = px.pie(filtered_df, names="Job Location", hole=0.2)  # Adjust the hole size
-fig.update_traces(text=filtered_df["Job Location"], textposition="inside")  # Change textposition
-fig.update_xaxes(ticks="outside", tickfont=dict(size=8, color='black'))  # Adjust font size
+fig = px.pie(filtered_df, names="Job Location", hole=0.2)  
+fig.update_traces(text=filtered_df["Job Location"], textposition="inside")  
+fig.update_xaxes(ticks="outside", tickfont=dict(size=8, color='black'))  
 fig.update_layout(
     width=700,
-    height=600,  # Adjust the height to fit the page
+    height=600,  
 )
 
 st.plotly_chart(fig, use_container_width=True)
-
-
 
 cl1, cl2 = st.columns((2))
 with cl1:
@@ -159,13 +124,10 @@ with st.expander("View Data of TimeSeries:"):
     csv = linechart.to_csv(index=False).encode("utf-8")
     st.download_button('Download Data', data = csv, file_name = "TimeSeries.csv", mime ='text/csv')
 
-# Filter the DataFrame to include only job locations in Tehran
 tehran_filtered_df = filtered_df[filtered_df["Job Location"] == "تهران"]
 
-# Group and count the records based on Job Location and Job Category
 records_count = tehran_filtered_df.groupby(["Job Location", "Job Category"]).size().reset_index(name="RecordCount")
 
-# Create a treemap based on Job Location, Job Category, and the count of records
 st.subheader("Hierarchical view of Records using TreeMap (Tehran)")
 fig3 = px.treemap(records_count, path=["Job Location", "Job Category"], values="RecordCount", hover_data=["RecordCount"],
                 color="Job Category")
